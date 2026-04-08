@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Badminton Tournament</title>
+  <style>
+    :root {
+      --navy:#16294d;
+      --navy-2:#223d72;
+      --bg:#f4f6fb;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --green:#22c55e;
+      --amber:#f59e0b;
+      --blue:#3b82f6;
+      --slate:#64748b;
+      --red:#ef4444;
+      --purple:#7c3aed;
+      --shadow:0 8px 24px rgba(17,24,39,.08);
+      --radius:18px;
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0;
+      font-family:Arial, Helvetica, sans-serif;
+      background:var(--bg);
+      color:#111827;
+    }
+    .header {
+      background:linear-gradient(135deg,var(--navy),var(--navy-2));
+      color:white;
+      padding:28px 20px 22px;
+      text-align:center;
+    }
+    .header h1 { margin:0; font-size:34px; letter-spacing:.3px; }
+    .header p { margin:8px 0 0; color:#dbe7ff; font-size:14px; }
+    .toolbar {
+      background:#fff;
+      border-bottom:1px solid var(--line);
+      padding:14px 18px;
+      position:sticky;
+      top:0;
+      z-index:50;
+      box-shadow:0 4px 14px rgba(0,0,0,.04);
+    }
+    .toolbar-inner {
+      max-width:1400px;
+      margin:0 auto;
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .search { flex:1 1 320px; }
+    .search input, .refresh-btn {
+      width:100%;
+      padding:12px 14px;
+      border:1px solid #cbd5e1;
+      border-radius:12px;
+      font-size:14px;
+      background:white;
+    }
+    .refresh-wrap { width:180px; }
+    .refresh-btn {
+      width:100%;
+      cursor:pointer;
+      font-weight:700;
+      color:var(--navy);
+    }
+    .tabs { display:flex; gap:8px; flex-wrap:wrap; }
+    .tab {
+      border:1px solid #cbd5e1;
+      background:#fff;
+      color:var(--navy);
+      padding:10px 14px;
+      border-radius:999px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .tab.active { background:var(--navy); color:#fff; border-color:var(--navy); }
+    .page { max-width:1400px; margin:0 auto; padding:22px 18px 50px; }
+    .stats {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+      gap:14px;
+      margin-bottom:20px;
+    }
+    .stat {
+      background:var(--card);
+      border-radius:16px;
+      padding:16px;
+      box-shadow:var(--shadow);
+      border:1px solid rgba(22,41,77,.06);
+    }
+    .stat .label { color:var(--muted); font-size:13px; margin-bottom:6px; }
+    .stat .value { font-size:28px; font-weight:800; color:var(--navy); }
+    .section { margin-top:26px; }
+    .section h2 { margin:0 0 14px; color:var(--navy); font-size:24px; }
+    .match-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(290px,1fr));
+      gap:14px;
+    }
+    .match-card {
+      background:#fff;
+      border-radius:16px;
+      padding:14px;
+      box-shadow:var(--shadow);
+      border-left:6px solid #cbd5e1;
+    }
+    .match-card.live { border-left-color:var(--green); }
+    .match-card.ondeck { border-left-color:var(--amber); }
+    .match-card.upcoming { border-left-color:var(--blue); }
+    .match-card.done, .match-card.completed { border-left-color:var(--slate); }
+    .match-card.playoff { outline:2px solid rgba(124,58,237,.1); }
+    .match-top {
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:flex-start;
+      margin-bottom:10px;
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+    }
+    .match-id { color:var(--navy); font-weight:800; }
+    .tag {
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:4px 8px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:800;
+      background:#eef2ff;
+      color:var(--navy);
+      text-transform:uppercase;
+      letter-spacing:.4px;
+    }
+    .tag.live { background:#ecfdf5; color:#166534; }
+    .tag.ondeck { background:#fffbeb; color:#92400e; }
+    .tag.upcoming { background:#eff6ff; color:#1d4ed8; }
+    .tag.done, .tag.completed { background:#f1f5f9; color:#334155; }
+    .team-row {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      background:#f8fafc;
+      border:1px solid #edf2f7;
+      border-radius:12px;
+      margin-bottom:8px;
+    }
+    .team-row:last-child { margin-bottom:0; }
+    .team-row.winner {
+      background:#ecfdf5;
+      border-color:#bbf7d0;
+      font-weight:800;
+      color:#166534;
+    }
+    .team-name { line-height:1.3; }
+    .score { font-weight:800; white-space:nowrap; }
+    .meta {
+      margin-top:10px;
+      font-size:12px;
+      color:var(--muted);
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .empty, .note, .status-bar {
+      background:#fff;
+      border-radius:16px;
+      padding:18px;
+      border:1px solid #e2e8f0;
+      color:var(--muted);
+      box-shadow:var(--shadow);
+    }
+    .status-bar {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+    .status-bar strong { color:var(--navy); }
+    .dot { width:10px; height:10px; border-radius:999px; display:inline-block; }
+    .dot.live { background:var(--green); }
+    .dot.ondeck { background:var(--amber); }
+    .dot.upcoming { background:var(--blue); }
+    .dot.done { background:var(--slate); }
+    .legend { display:flex; gap:16px; flex-wrap:wrap; font-size:13px; }
+    .legend-item { display:flex; align-items:center; gap:6px; }
+    .standings-wrap {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+      gap:16px;
+    }
+    .pool-card {
+      background:white;
+      border-radius:16px;
+      padding:14px;
+      box-shadow:var(--shadow);
+    }
+    .pool-card h3 { margin:0 0 10px; color:var(--navy); }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th, td { padding:8px 6px; border-bottom:1px solid #eef2f7; text-align:left; }
+    th { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.3px; }
+    .bracket-scroll { overflow-x:auto; padding-bottom:8px; }
+    .bracket {
+      display:grid;
+      grid-auto-flow:column;
+      grid-auto-columns:minmax(260px,1fr);
+      gap:18px;
+      align-items:start;
+      min-width:max-content;
+    }
+    .round-col { display:flex; flex-direction:column; gap:16px; }
+    .round-title {
+      text-align:center;
+      color:var(--navy);
+      font-weight:800;
+      font-size:18px;
+      margin-bottom:4px;
+    }
+    .bracket-match {
+      background:var(--navy);
+      color:white;
+      border-radius:18px;
+      padding:14px;
+      box-shadow:0 8px 18px rgba(22,41,77,.18);
+    }
+    .bracket-match .mid { font-size:12px; color:#dbe7ff; margin-bottom:10px; font-weight:700; }
+    .bteam {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      background:rgba(255,255,255,.08);
+      margin-bottom:8px;
+    }
+    .bteam:last-child { margin-bottom:0; }
+    .bteam.winner { background:white; color:var(--navy); font-weight:800; }
+    .footer { margin-top:26px; font-size:12px; color:var(--muted); text-align:center; }
+    .hidden { display:none !important; }
+    @media (max-width: 720px) {
+      .header h1 { font-size:28px; }
+      .section h2 { font-size:22px; }
+      .refresh-wrap { width:100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 id="title">Early Birdie Tournament</h1>
+    <p>Live scoreboard connected to Google Sheets. Auto-refreshes every 30 seconds.</p>
+  </div>
+
+  <div class="toolbar">
+    <div class="toolbar-inner">
+      <div class="search"><input id="searchBox" type="text" placeholder="Search by player, school, pool, division, or match number..." /></div>
+      <div class="refresh-wrap"><button id="refreshBtn" class="refresh-btn">Refresh now</button></div>
+      <div class="tabs" id="tabs"></div>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="status-bar">
+      <div><strong id="syncLabel">Connecting to Google Sheets…</strong><br><span id="syncMeta">Waiting for first load.</span></div>
+      <div class="legend">
+        <div class="legend-item"><span class="dot live"></span> Live</div>
+        <div class="legend-item"><span class="dot ondeck"></span> On Deck</div>
+        <div class="legend-item"><span class="dot upcoming"></span> Upcoming</div>
+        <div class="legend-item"><span class="dot done"></span> Done</div>
+      </div>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="note" id="noteBox">
+      This page reads the tournament directly from your Google Sheet. If something looks off, make sure the sheet tabs stay named like <strong>All_Matches</strong>, <strong>Pool_Standinds_Web</strong>, and <strong>Playoffs_*_Web</strong>.
+    </div>
+
+    <div class="section">
+      <h2>Now Playing</h2>
+      <div id="liveMatches" class="match-grid"></div>
+    </div>
+
+    <div class="section">
+      <h2>On Deck</h2>
+      <div id="onDeckMatches" class="match-grid"></div>
+    </div>
+
+    <div class="section">
+      <h2>Upcoming Matches</h2>
+      <div id="upcomingMatches" class="match-grid"></div>
+    </div>
+
+    <div class="section">
+      <h2>Completed Matches</h2>
+      <div id="completedMatches" class="match-grid"></div>
+    </div>
+
+    <div class="section">
+      <h2>Pool Standings</h2>
+      <div id="standings"></div>
+    </div>
+
+    <div class="section">
+      <h2>Playoff Brackets</h2>
+      <div id="playoffs"></div>
+    </div>
+
+    <div class="footer">Built for live tournament display from Google Sheets.</div>
+  </div>
+
+<script>
+const CONFIG = {
+  sheetId: '1VLgYNaHQ7NW5Y6SUuNi-LGh0Z7FwIcdAmhXEU7tn6UA',
+  refreshMs: 30000,
+  title: 'Early Birdie Tournament',
+  tabs: ['All', 'Boys Singles', 'Girls Singles', 'Girls Doubles', 'Boys Doubles', 'Mixed Doubles'],
+  endpoints: {
+    matches: 'All_Matches',
+    standings: 'Pool_Standinds_Web',
+    playoffSheets: ['Playoffs_BS_Web','Playoffs_GS_Web','Playoffs_GD_Web','Playoffs_BD_Web','Playoffs_MD_Web'],
+    teamSheets: ['Teams_BS','Teams_GS','Teams_GD','Teams_BD','Teams_MD']
+  }
+};
+
+const FALLBACK_POOL_MATCHES = [{"division": "Boys Singles", "pool": "A", "matchId": 1, "stage": "Pool", "teamA": "GF-BS1 - Alex", "teamB": "NP-BS4 - Sarvesh", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "A", "matchId": 2, "stage": "Pool", "teamA": "BC-BS2 - Corrdelle", "teamB": "HL-BS3 - Bilal", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "B", "matchId": 3, "stage": "Pool", "teamA": "BC-BS1 - Tye", "teamB": "CP-BS1 - Agrim", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "B", "matchId": 4, "stage": "Pool", "teamA": "HL-BS2 - Ardwin", "teamB": "NP-BS3 - Ryan", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "C", "matchId": 5, "stage": "Pool", "teamA": "HL-BS1 - Gurekam", "teamB": "BC-BS3 - Meshv", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "C", "matchId": 6, "stage": "Pool", "teamA": "NP-BS2 - Jatin", "teamB": "CP-BS3 - Digvijay", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "A", "matchId": 7, "stage": "Pool", "teamA": "CP-GS1 - Sneha", "teamB": "BC-GS1 - Ruheen", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "A", "matchId": 8, "stage": "Pool", "teamA": "NP-GS2 - Sarah", "teamB": "HL-GS3 - HL-GS3", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "B", "matchId": 9, "stage": "Pool", "teamA": "NP-GS1 - Pavit", "teamB": "GF-GS1 - Husna", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "B", "matchId": 10, "stage": "Pool", "teamA": "HL-GS2 - HL-GS2", "teamB": "NP-GS5 - Ayesha", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "C", "matchId": 11, "stage": "Pool", "teamA": "CP-GS2 - Tashvi", "teamB": "NP-GS4 - Siana", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "C", "matchId": 12, "stage": "Pool", "teamA": "NP-GS3 - Swastha", "teamB": "HL-GS1 - HL-GS1", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "A", "matchId": 13, "stage": "Pool", "teamA": "NP-GD1 - Jeshvi / Sahibdeep", "teamB": "BC-GD1 - Amanie / Baani", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "A", "matchId": 14, "stage": "Pool", "teamA": "CP-GD2 - Savvy / Yashvi", "teamB": "GF-GD3 - Nandita / Leisha", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "B", "matchId": 15, "stage": "Pool", "teamA": "NP-GD3 - Sneha / Ashmita", "teamB": "NP-GD4 - Nylie / Sanskriti", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "B", "matchId": 16, "stage": "Pool", "teamA": "CP-GD1 - Evelyn / Viha", "teamB": "GF-GD2 - Shiza / Tala", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "C", "matchId": 17, "stage": "Pool", "teamA": "HL-GD2 - Nimar / Sneha", "teamB": "CP-GD3 - Disha / Rishva", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "C", "matchId": 18, "stage": "Pool", "teamA": "GF-GD1 - Larita / Rona", "teamB": "NP-GD2 - Aagman / Suhani", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "A", "matchId": 19, "stage": "Pool", "teamA": "BC-BD1 - Arjun / Jovin", "teamB": "CP-BD1 - Edwyn / Jaskaran", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "A", "matchId": 20, "stage": "Pool", "teamA": "HL-BD2 - HL-BD2 / HL-BD2B", "teamB": "NP-BD3 - Ishaan / Wildan", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "B", "matchId": 21, "stage": "Pool", "teamA": "HL-BD1 - Angad / TBD", "teamB": "GF-BD1 - Vihaan / Smarth", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "B", "matchId": 22, "stage": "Pool", "teamA": "NP-BD2 - Aidan / Aryan", "teamB": "CP-BD3 - Aarav / Kavan", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "C", "matchId": 23, "stage": "Pool", "teamA": "NP-BD1 - Vihaan / Darshil", "teamB": "NP-BD4 - Mason / Binuka", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "C", "matchId": 24, "stage": "Pool", "teamA": "CP-BD2 - Mahin / Jashandeep", "teamB": "GF-BD2 - Ethan / Mehaan", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "A", "matchId": 25, "stage": "Pool", "teamA": "HL-BS3 - Bilal", "teamB": "GF-BS1 - Alex", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "A", "matchId": 26, "stage": "Pool", "teamA": "NP-BS4 - Sarvesh", "teamB": "CP-BS2 - Aarva", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "B", "matchId": 27, "stage": "Pool", "teamA": "NP-BS3 - Ryan", "teamB": "BC-BS1 - Tye", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "B", "matchId": 28, "stage": "Pool", "teamA": "CP-BS1 - Agrim", "teamB": "GF-BS2 - Austin", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "C", "matchId": 29, "stage": "Pool", "teamA": "CP-BS3 - Digvijay", "teamB": "HL-BS1 - Gurekam", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "C", "matchId": 30, "stage": "Pool", "teamA": "BC-BS3 - Meshv", "teamB": "GF-BS2 - Austin", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "A", "matchId": 31, "stage": "Pool", "teamA": "HL-GS3 - HL-GS3", "teamB": "CP-GS1 - Sneha", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "A", "matchId": 32, "stage": "Pool", "teamA": "BC-GS1 - Ruheen", "teamB": "GF-GS3 - Siddhi", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "B", "matchId": 33, "stage": "Pool", "teamA": "NP-GS5 - Ayesha", "teamB": "NP-GS1 - Pavit", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "B", "matchId": 34, "stage": "Pool", "teamA": "GF-GS1 - Husna", "teamB": "CP-GS3 - Siya", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "C", "matchId": 35, "stage": "Pool", "teamA": "HL-GS1 - HL-GS1", "teamB": "CP-GS2 - Tashvi", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "C", "matchId": 36, "stage": "Pool", "teamA": "NP-GS4 - Siana", "teamB": "GF-GS2 - Ella", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "A", "matchId": 37, "stage": "Pool", "teamA": "GF-GD3 - Nandita / Leisha", "teamB": "NP-GD1 - Jeshvi / Sahibdeep", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "A", "matchId": 38, "stage": "Pool", "teamA": "BC-GD1 - Amanie / Baani", "teamB": "HL-GD3 - Kalyani / Saahiba", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "B", "matchId": 39, "stage": "Pool", "teamA": "GF-GD2 - Shiza / Tala", "teamB": "NP-GD3 - Sneha / Ashmita", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "B", "matchId": 40, "stage": "Pool", "teamA": "NP-GD4 - Nylie / Sanskriti", "teamB": "HL-GD1 - Kiran / Prabhleen", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "C", "matchId": 41, "stage": "Pool", "teamA": "NP-GD2 - Aagman / Suhani", "teamB": "HL-GD2 - Nimar / Sneha", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "C", "matchId": 42, "stage": "Pool", "teamA": "CP-GD3 - Disha / Rishva", "teamB": "BC-GD2 - BC-GD2 / BC-GD2B", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "A", "matchId": 43, "stage": "Pool", "teamA": "NP-BD3 - Ishaan / Wildan", "teamB": "BC-BD1 - Arjun / Jovin", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "A", "matchId": 44, "stage": "Pool", "teamA": "CP-BD1 - Edwyn / Jaskaran", "teamB": "GF-BD3 - Ali / Abhihdeep", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "B", "matchId": 45, "stage": "Pool", "teamA": "CP-BD3 - Aarav / Kavan", "teamB": "HL-BD1 - Angad / TBD", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "B", "matchId": 46, "stage": "Pool", "teamA": "GF-BD1 - Vihaan / Smarth", "teamB": "BC-BD2 - Gurjap / Matthew", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "C", "matchId": 47, "stage": "Pool", "teamA": "GF-BD2 - Ethan / Mehaan", "teamB": "NP-BD1 - Vihaan / Darshil", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "C", "matchId": 48, "stage": "Pool", "teamA": "NP-BD4 - Mason / Binuka", "teamB": "HL-BD3 - HL-BD3 / HL-BD3B", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "A", "matchId": 49, "stage": "Pool", "teamA": "CP-BS2 - Aarva", "teamB": "HL-BS3 - Bilal", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "A", "matchId": 50, "stage": "Pool", "teamA": "GF-BS1 - Alex", "teamB": "BC-BS2 - Corrdelle", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "B", "matchId": 51, "stage": "Pool", "teamA": "GF-BS2 - Austin", "teamB": "NP-BS3 - Ryan", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "B", "matchId": 52, "stage": "Pool", "teamA": "BC-BS1 - Tye", "teamB": "HL-BS2 - Ardwin", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "C", "matchId": 53, "stage": "Pool", "teamA": "GF-BS2 - Austin", "teamB": "CP-BS3 - Digvijay", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "C", "matchId": 54, "stage": "Pool", "teamA": "HL-BS1 - Gurekam", "teamB": "NP-BS2 - Jatin", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "A", "matchId": 55, "stage": "Pool", "teamA": "GF-GS3 - Siddhi", "teamB": "HL-GS3 - HL-GS3", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "A", "matchId": 56, "stage": "Pool", "teamA": "CP-GS1 - Sneha", "teamB": "NP-GS2 - Sarah", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "B", "matchId": 57, "stage": "Pool", "teamA": "CP-GS3 - Siya", "teamB": "NP-GS5 - Ayesha", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "B", "matchId": 58, "stage": "Pool", "teamA": "NP-GS1 - Pavit", "teamB": "HL-GS2 - HL-GS2", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "C", "matchId": 59, "stage": "Pool", "teamA": "GF-GS2 - Ella", "teamB": "HL-GS1 - HL-GS1", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "C", "matchId": 60, "stage": "Pool", "teamA": "CP-GS2 - Tashvi", "teamB": "NP-GS3 - Swastha", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "A", "matchId": 61, "stage": "Pool", "teamA": "HL-GD3 - Kalyani / Saahiba", "teamB": "GF-GD3 - Nandita / Leisha", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "A", "matchId": 62, "stage": "Pool", "teamA": "NP-GD1 - Jeshvi / Sahibdeep", "teamB": "CP-GD2 - Savvy / Yashvi", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "B", "matchId": 63, "stage": "Pool", "teamA": "HL-GD1 - Kiran / Prabhleen", "teamB": "GF-GD2 - Shiza / Tala", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "B", "matchId": 64, "stage": "Pool", "teamA": "NP-GD3 - Sneha / Ashmita", "teamB": "CP-GD1 - Evelyn / Viha", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "C", "matchId": 65, "stage": "Pool", "teamA": "BC-GD2 - BC-GD2 / BC-GD2B", "teamB": "NP-GD2 - Aagman / Suhani", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "C", "matchId": 66, "stage": "Pool", "teamA": "HL-GD2 - Nimar / Sneha", "teamB": "GF-GD1 - Larita / Rona", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "A", "matchId": 67, "stage": "Pool", "teamA": "GF-BD3 - Ali / Abhihdeep", "teamB": "NP-BD3 - Ishaan / Wildan", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "A", "matchId": 68, "stage": "Pool", "teamA": "BC-BD1 - Arjun / Jovin", "teamB": "HL-BD2 - HL-BD2 / HL-BD2B", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "B", "matchId": 69, "stage": "Pool", "teamA": "BC-BD2 - Gurjap / Matthew", "teamB": "CP-BD3 - Aarav / Kavan", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "B", "matchId": 70, "stage": "Pool", "teamA": "HL-BD1 - Angad / TBD", "teamB": "NP-BD2 - Aidan / Aryan", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "C", "matchId": 71, "stage": "Pool", "teamA": "HL-BD3 - HL-BD3 / HL-BD3B", "teamB": "GF-BD2 - Ethan / Mehaan", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "C", "matchId": 72, "stage": "Pool", "teamA": "NP-BD1 - Vihaan / Darshil", "teamB": "CP-BD2 - Mahin / Jashandeep", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "A", "matchId": 73, "stage": "Pool", "teamA": "BC-BS2 - Corrdelle", "teamB": "CP-BS2 - Aarva", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "A", "matchId": 74, "stage": "Pool", "teamA": "HL-BS3 - Bilal", "teamB": "NP-BS4 - Sarvesh", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "B", "matchId": 75, "stage": "Pool", "teamA": "HL-BS2 - Ardwin", "teamB": "GF-BS2 - Austin", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "B", "matchId": 76, "stage": "Pool", "teamA": "NP-BS3 - Ryan", "teamB": "CP-BS1 - Agrim", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "C", "matchId": 77, "stage": "Pool", "teamA": "NP-BS2 - Jatin", "teamB": "GF-BS2 - Austin", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "C", "matchId": 78, "stage": "Pool", "teamA": "CP-BS3 - Digvijay", "teamB": "BC-BS3 - Meshv", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "A", "matchId": 79, "stage": "Pool", "teamA": "NP-GS2 - Sarah", "teamB": "GF-GS3 - Siddhi", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "A", "matchId": 80, "stage": "Pool", "teamA": "HL-GS3 - HL-GS3", "teamB": "BC-GS1 - Ruheen", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "B", "matchId": 81, "stage": "Pool", "teamA": "HL-GS2 - HL-GS2", "teamB": "CP-GS3 - Siya", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "B", "matchId": 82, "stage": "Pool", "teamA": "NP-GS5 - Ayesha", "teamB": "GF-GS1 - Husna", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "C", "matchId": 83, "stage": "Pool", "teamA": "NP-GS3 - Swastha", "teamB": "GF-GS2 - Ella", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "C", "matchId": 84, "stage": "Pool", "teamA": "HL-GS1 - HL-GS1", "teamB": "NP-GS4 - Siana", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "A", "matchId": 85, "stage": "Pool", "teamA": "CP-GD2 - Savvy / Yashvi", "teamB": "HL-GD3 - Kalyani / Saahiba", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "A", "matchId": 86, "stage": "Pool", "teamA": "GF-GD3 - Nandita / Leisha", "teamB": "BC-GD1 - Amanie / Baani", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "B", "matchId": 87, "stage": "Pool", "teamA": "CP-GD1 - Evelyn / Viha", "teamB": "HL-GD1 - Kiran / Prabhleen", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "B", "matchId": 88, "stage": "Pool", "teamA": "GF-GD2 - Shiza / Tala", "teamB": "NP-GD4 - Nylie / Sanskriti", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "C", "matchId": 89, "stage": "Pool", "teamA": "GF-GD1 - Larita / Rona", "teamB": "BC-GD2 - BC-GD2 / BC-GD2B", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "C", "matchId": 90, "stage": "Pool", "teamA": "NP-GD2 - Aagman / Suhani", "teamB": "CP-GD3 - Disha / Rishva", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "A", "matchId": 91, "stage": "Pool", "teamA": "HL-BD2 - HL-BD2 / HL-BD2B", "teamB": "GF-BD3 - Ali / Abhihdeep", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "A", "matchId": 92, "stage": "Pool", "teamA": "NP-BD3 - Ishaan / Wildan", "teamB": "CP-BD1 - Edwyn / Jaskaran", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "B", "matchId": 93, "stage": "Pool", "teamA": "NP-BD2 - Aidan / Aryan", "teamB": "BC-BD2 - Gurjap / Matthew", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "B", "matchId": 94, "stage": "Pool", "teamA": "CP-BD3 - Aarav / Kavan", "teamB": "GF-BD1 - Vihaan / Smarth", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "C", "matchId": 95, "stage": "Pool", "teamA": "CP-BD2 - Mahin / Jashandeep", "teamB": "HL-BD3 - HL-BD3 / HL-BD3B", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "C", "matchId": 96, "stage": "Pool", "teamA": "GF-BD2 - Ethan / Mehaan", "teamB": "NP-BD4 - Mason / Binuka", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "A", "matchId": 97, "stage": "Pool", "teamA": "NP-BS4 - Sarvesh", "teamB": "BC-BS2 - Corrdelle", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "A", "matchId": 98, "stage": "Pool", "teamA": "CP-BS2 - Aarva", "teamB": "GF-BS1 - Alex", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "B", "matchId": 99, "stage": "Pool", "teamA": "CP-BS1 - Agrim", "teamB": "HL-BS2 - Ardwin", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "B", "matchId": 100, "stage": "Pool", "teamA": "GF-BS2 - Austin", "teamB": "BC-BS1 - Tye", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "C", "matchId": 101, "stage": "Pool", "teamA": "BC-BS3 - Meshv", "teamB": "NP-BS2 - Jatin", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Singles", "pool": "C", "matchId": 102, "stage": "Pool", "teamA": "GF-BS2 - Austin", "teamB": "HL-BS1 - Gurekam", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "A", "matchId": 103, "stage": "Pool", "teamA": "BC-GS1 - Ruheen", "teamB": "NP-GS2 - Sarah", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "A", "matchId": 104, "stage": "Pool", "teamA": "GF-GS3 - Siddhi", "teamB": "CP-GS1 - Sneha", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "B", "matchId": 105, "stage": "Pool", "teamA": "GF-GS1 - Husna", "teamB": "HL-GS2 - HL-GS2", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "B", "matchId": 106, "stage": "Pool", "teamA": "CP-GS3 - Siya", "teamB": "NP-GS1 - Pavit", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "C", "matchId": 107, "stage": "Pool", "teamA": "NP-GS4 - Siana", "teamB": "NP-GS3 - Swastha", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Singles", "pool": "C", "matchId": 108, "stage": "Pool", "teamA": "GF-GS2 - Ella", "teamB": "CP-GS2 - Tashvi", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "A", "matchId": 109, "stage": "Pool", "teamA": "BC-GD1 - Amanie / Baani", "teamB": "CP-GD2 - Savvy / Yashvi", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "A", "matchId": 110, "stage": "Pool", "teamA": "HL-GD3 - Kalyani / Saahiba", "teamB": "NP-GD1 - Jeshvi / Sahibdeep", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "B", "matchId": 111, "stage": "Pool", "teamA": "NP-GD4 - Nylie / Sanskriti", "teamB": "CP-GD1 - Evelyn / Viha", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "B", "matchId": 112, "stage": "Pool", "teamA": "HL-GD1 - Kiran / Prabhleen", "teamB": "NP-GD3 - Sneha / Ashmita", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "C", "matchId": 113, "stage": "Pool", "teamA": "CP-GD3 - Disha / Rishva", "teamB": "GF-GD1 - Larita / Rona", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Girls Doubles", "pool": "C", "matchId": 114, "stage": "Pool", "teamA": "BC-GD2 - BC-GD2 / BC-GD2B", "teamB": "HL-GD2 - Nimar / Sneha", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "A", "matchId": 115, "stage": "Pool", "teamA": "CP-BD1 - Edwyn / Jaskaran", "teamB": "HL-BD2 - HL-BD2 / HL-BD2B", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "A", "matchId": 116, "stage": "Pool", "teamA": "GF-BD3 - Ali / Abhihdeep", "teamB": "BC-BD1 - Arjun / Jovin", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "B", "matchId": 117, "stage": "Pool", "teamA": "GF-BD1 - Vihaan / Smarth", "teamB": "NP-BD2 - Aidan / Aryan", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "B", "matchId": 118, "stage": "Pool", "teamA": "BC-BD2 - Gurjap / Matthew", "teamB": "HL-BD1 - Angad / TBD", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "C", "matchId": 119, "stage": "Pool", "teamA": "NP-BD4 - Mason / Binuka", "teamB": "CP-BD2 - Mahin / Jashandeep", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Boys Doubles", "pool": "C", "matchId": 120, "stage": "Pool", "teamA": "HL-BD3 - HL-BD3 / HL-BD3B", "teamB": "NP-BD1 - Vihaan / Darshil", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "A", "matchId": "", "stage": "Pool", "teamA": "Seed 1", "teamB": "Seed 2", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "A", "matchId": "", "stage": "Pool", "teamA": "Seed 3", "teamB": "Seed 4", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "A", "matchId": "", "stage": "Pool", "teamA": "Seed 1", "teamB": "Seed 3", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "A", "matchId": "", "stage": "Pool", "teamA": "Seed 2", "teamB": "Seed 4", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "A", "matchId": "", "stage": "Pool", "teamA": "Seed 1", "teamB": "Seed 4", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "A", "matchId": "", "stage": "Pool", "teamA": "Seed 2", "teamB": "Seed 3", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "B", "matchId": "", "stage": "Pool", "teamA": "Seed 1", "teamB": "Seed 2", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "B", "matchId": "", "stage": "Pool", "teamA": "Seed 3", "teamB": "Seed 4", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "B", "matchId": "", "stage": "Pool", "teamA": "Seed 1", "teamB": "Seed 3", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "B", "matchId": "", "stage": "Pool", "teamA": "Seed 2", "teamB": "Seed 4", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "B", "matchId": "", "stage": "Pool", "teamA": "Seed 1", "teamB": "Seed 4", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "B", "matchId": "", "stage": "Pool", "teamA": "Seed 2", "teamB": "Seed 3", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "C", "matchId": "", "stage": "Pool", "teamA": "Seed 1", "teamB": "Seed 2", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "C", "matchId": "", "stage": "Pool", "teamA": "Seed 3", "teamB": "Seed 4", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "C", "matchId": "", "stage": "Pool", "teamA": "Seed 1", "teamB": "Seed 3", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "C", "matchId": "", "stage": "Pool", "teamA": "Seed 2", "teamB": "Seed 4", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "C", "matchId": "", "stage": "Pool", "teamA": "Seed 1", "teamB": "Seed 4", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "C", "matchId": "", "stage": "Pool", "teamA": "Seed 2", "teamB": "Seed 3", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "D", "matchId": "", "stage": "Pool", "teamA": "Seed 1", "teamB": "Seed 2", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "D", "matchId": "", "stage": "Pool", "teamA": "Seed 3", "teamB": "Seed 4", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "D", "matchId": "", "stage": "Pool", "teamA": "Seed 1", "teamB": "Seed 3", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "D", "matchId": "", "stage": "Pool", "teamA": "Seed 2", "teamB": "Seed 4", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "D", "matchId": "", "stage": "Pool", "teamA": "Seed 1", "teamB": "Seed 4", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}, {"division": "Mixed Doubles", "pool": "D", "matchId": "", "stage": "Pool", "teamA": "Seed 2", "teamB": "Seed 3", "scoreA": "", "scoreB": "", "winner": "", "court": "", "status": "Upcoming"}];
+const state = {
+  matches: [],
+  standings: [],
+  playoffRows: [],
+  teamSheetRows: [],
+  activeTab: 'All',
+  search: '',
+  lastLoadedAt: null,
+  error: null,
+  intervalId: null
+};
+
+const els = {
+  title: document.getElementById('title'),
+  tabs: document.getElementById('tabs'),
+  stats: document.getElementById('stats'),
+  syncLabel: document.getElementById('syncLabel'),
+  syncMeta: document.getElementById('syncMeta'),
+  liveMatches: document.getElementById('liveMatches'),
+  onDeckMatches: document.getElementById('onDeckMatches'),
+  upcomingMatches: document.getElementById('upcomingMatches'),
+  completedMatches: document.getElementById('completedMatches'),
+  standings: document.getElementById('standings'),
+  playoffs: document.getElementById('playoffs'),
+  searchBox: document.getElementById('searchBox'),
+  refreshBtn: document.getElementById('refreshBtn'),
+  noteBox: document.getElementById('noteBox')
+};
+
+els.title.textContent = CONFIG.title;
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderTabs();
+  bindEvents();
+  loadAllData();
+  state.intervalId = setInterval(loadAllData, CONFIG.refreshMs);
+});
+
+function bindEvents() {
+  els.searchBox.addEventListener('input', (e) => {
+    state.search = (e.target.value || '').trim().toLowerCase();
+    renderAll();
+  });
+  els.refreshBtn.addEventListener('click', loadAllData);
+}
+
+function renderTabs() {
+  els.tabs.innerHTML = '';
+  CONFIG.tabs.forEach(tab => {
+    const btn = document.createElement('button');
+    btn.className = `tab ${tab === state.activeTab ? 'active' : ''}`;
+    btn.textContent = tab;
+    btn.addEventListener('click', () => {
+      state.activeTab = tab;
+      renderTabs();
+      renderAll();
+    });
+    els.tabs.appendChild(btn);
+  });
+}
+
+async function loadAllData() {
+  els.syncLabel.textContent = 'Refreshing from Google Sheets…';
+  els.syncMeta.textContent = 'Fetching latest match and standings data.';
+  try {
+    const [matchesRows, standingsRows, playoffRowSets, teamRowSets] = await Promise.all([
+      fetchSheetRows(CONFIG.endpoints.matches),
+      fetchSheetRows(CONFIG.endpoints.standings).catch(() => []),
+      Promise.all(CONFIG.endpoints.playoffSheets.map(name => fetchSheetRows(name).catch(() => []))),
+      Promise.all(CONFIG.endpoints.teamSheets.map(name => fetchSheetRows(name).then(rows => ({ name, rows })).catch(() => ({ name, rows: [] }))))
+    ]);
+
+    state.standings = parseStandings(standingsRows);
+    state.playoffRows = parseGenericRows(playoffRowSets.flat());
+    state.teamSheetRows = parseTeamSheetRows(teamRowSets);
+    state.matches = enrichResolvedMatches(parseMatches(matchesRows), state.standings, state.playoffRows, state.teamSheetRows);
+    state.lastLoadedAt = new Date();
+    state.error = null;
+
+    els.syncLabel.textContent = 'Live sync active';
+    els.syncMeta.textContent = `Last updated ${state.lastLoadedAt.toLocaleTimeString([], { hour:'numeric', minute:'2-digit', second:'2-digit' })}. Refreshes every 30 seconds.`;
+    renderAll();
+  } catch (err) {
+    console.error(err);
+    state.error = err;
+    els.syncLabel.textContent = 'Could not read the sheet';
+    els.syncMeta.textContent = 'Check that the Google Sheet is shared publicly and the tab names still match the website configuration.';
+    renderAll();
+  }
+}
+
+function csvUrl(sheetName) {
+  return `https://docs.google.com/spreadsheets/d/${CONFIG.sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+}
+
+async function fetchSheetRows(sheetName) {
+  const response = await fetch(csvUrl(sheetName), { cache: 'no-store' });
+  if (!response.ok) throw new Error(`Failed loading ${sheetName}`);
+  const text = await response.text();
+  return parseCsv(text);
+}
+
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let value = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const next = text[i + 1];
+
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        value += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      row.push(value);
+      value = '';
+    } else if ((char === '\n' || char === '\r') && !inQuotes) {
+      if (char === '\r' && next === '\n') i++;
+      row.push(value);
+      if (row.some(cell => String(cell).trim() !== '')) rows.push(row);
+      row = [];
+      value = '';
+    } else {
+      value += char;
+    }
+  }
+  if (value.length || row.length) {
+    row.push(value);
+    if (row.some(cell => String(cell).trim() !== '')) rows.push(row);
+  }
+  return rows;
+}
+
+function normalizeKey(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/\u00a0/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function mapRows(rows) {
+  if (!rows.length) return [];
+  const headers = rows[0].map(h => String(h || '').trim());
+  return rows.slice(1).map(r => {
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = r[i] ?? '');
+    return obj;
+  }).filter(obj => Object.values(obj).some(v => String(v || '').trim() !== ''));
+}
+
+function pick(obj, patterns) {
+  const entries = Object.entries(obj);
+  for (const [key, value] of entries) {
+    const nk = normalizeKey(key);
+    if (patterns.some(p => nk === p || nk.includes(p))) return value;
+  }
+  return '';
+}
+
+function parseMatches(rows) {
+  return mapRows(rows).map((raw, index) => {
+    const division = pick(raw, ['division', 'event', 'draw']) || 'Division';
+    const stage = pick(raw, ['stage', 'round', 'phase']) || 'Pool';
+    const pool = pick(raw, ['pool', 'group']);
+    const matchId = pick(raw, ['match id', 'match number', 'match', 'game number', 'game']) || (index + 1);
+    const teamASlot = pick(raw, ['team a slot', 'slot a', 'seed a', 'a slot', 'player a slot']);
+    const teamBSlot = pick(raw, ['team b slot', 'slot b', 'seed b', 'b slot', 'player b slot']);
+    const schoolA = pick(raw, ['school a']);
+    const schoolB = pick(raw, ['school b']);
+    const directTeamA = pick(raw, ['team a', 'player a', 'side a', 'name a', 'competitor a']);
+    const directTeamB = pick(raw, ['team b', 'player b', 'side b', 'name b', 'competitor b']);
+    const teamA = schoolA || directTeamA || teamASlot || pick(raw, ['seed 1', 'left']) || 'TBD';
+    const teamB = schoolB || directTeamB || teamBSlot || pick(raw, ['seed 2', 'right']) || 'TBD';
+    const scoreA = pick(raw, ['score a', 'a score', 'left score', 'score1']);
+    const scoreB = pick(raw, ['score b', 'b score', 'right score', 'score2']);
+    const winner = pick(raw, ['winner', 'winning side']);
+    const court = pick(raw, ['court', 'courts']);
+    const status = normalizeStatus(pick(raw, ['status', 'state'])) || inferStatus(scoreA, scoreB, winner);
+    return {
+      division, stage, pool, matchId: String(matchId).trim(), teamA: String(teamA).trim(), teamB: String(teamB).trim(),
+      scoreA: String(scoreA).trim(), scoreB: String(scoreB).trim(), winner: String(winner).trim(), court: String(court).trim(),
+      status, raw
+    };
+  }).filter(m => m.teamA || m.teamB);
+}
+
+function normalizeStatus(status) {
+  const s = normalizeKey(status);
+  if (!s) return '';
+  if (s.includes('live')) return 'LIVE';
+  if (s.includes('deck')) return 'On Deck';
+  if (s.includes('done') || s.includes('complete') || s.includes('finished')) return 'DONE';
+  if (s.includes('upcoming') || s.includes('next')) return 'Upcoming';
+  return String(status).trim();
+}
+
+function inferStatus(scoreA, scoreB, winner) {
+  if (winner || scoreA || scoreB) return 'DONE';
+  return 'Upcoming';
+}
+
+function parseStandings(rows) {
+  const mapped = mapRows(rows);
+  if (!mapped.length) return [];
+  return mapped.map(raw => {
+    const division = pick(raw, ['division', 'event', 'draw']) || 'Division';
+    const pool = pick(raw, ['pool', 'group']) || '';
+    const team = pick(raw, ['team', 'player', 'name', 'school']);
+    const rank = pick(raw, ['rank', 'seed', 'place', 'position']);
+    const wins = pick(raw, ['wins', 'w']);
+    const losses = pick(raw, ['losses', 'l']);
+    const points = pick(raw, ['points', 'pts']);
+    const diff = pick(raw, ['diff', 'difference', 'point diff', 'pd']);
+    return { division, pool, team, rank, wins, losses, points, diff };
+  }).filter(r => r.team);
+}
+
+function parseGenericRows(rows) {
+  return mapRows(rows).map(raw => {
+    const division = pick(raw, ['division', 'event', 'draw']) || inferDivisionFromSheet(raw) || '';
+    const stage = pick(raw, ['stage', 'round', 'phase']) || '';
+    const pool = pick(raw, ['pool', 'group']) || '';
+    const matchId = String(pick(raw, ['match id', 'match number', 'match', 'game number', 'game']) || '').trim();
+    const teamA = String(pick(raw, ['team a', 'player a', 'side a', 'name a', 'competitor a', 'source a', 'slot a', 'left']) || '').trim();
+    const teamB = String(pick(raw, ['team b', 'player b', 'side b', 'name b', 'competitor b', 'source b', 'slot b', 'right']) || '').trim();
+    const winner = String(pick(raw, ['winner', 'winning side']) || '').trim();
+    return { division, stage, pool, matchId, teamA, teamB, winner, raw };
+  });
+}
+
+function inferDivisionFromSheet(raw) {
+  const keys = Object.keys(raw).join(' ').toLowerCase();
+  if (keys.includes('bs')) return 'Boys Singles';
+  if (keys.includes('gs')) return 'Girls Singles';
+  if (keys.includes('gd')) return 'Girls Doubles';
+  if (keys.includes('bd')) return 'Boys Doubles';
+  if (keys.includes('md')) return 'Mixed Doubles';
+  return '';
+}
+
+function divisionFromTeamSheetName(name) {
+  const n = String(name || '').toUpperCase();
+  if (n.includes('TEAMS_BS')) return 'Boys Singles';
+  if (n.includes('TEAMS_GS')) return 'Girls Singles';
+  if (n.includes('TEAMS_GD')) return 'Girls Doubles';
+  if (n.includes('TEAMS_BD')) return 'Boys Doubles';
+  if (n.includes('TEAMS_MD')) return 'Mixed Doubles';
+  return '';
+}
+
+function parseTeamSheetRows(teamRowSets) {
+  const out = [];
+  (teamRowSets || []).forEach(({ name, rows }) => {
+    const division = divisionFromTeamSheetName(name);
+    if (!division || !rows || !rows.length) return;
+    const mapped = mapRows(rows);
+    if (!mapped.length) return;
+
+    mapped.forEach((raw, index) => {
+      const explicitPool = pick(raw, ['pool', 'group', 'flight']);
+      const explicitSlot = pick(raw, ['slot', 'seed', 'rank', 'position', '#']);
+      const explicitName = pick(raw, ['team', 'player', 'players', 'name', 'entry', 'pairing']);
+
+      if (explicitPool && explicitSlot && explicitName) {
+        out.push({ division, pool: explicitPool, slot: explicitSlot, team: explicitName, raw });
+        return;
+      }
+
+      const seedValue = explicitSlot || String(index + 1);
+      Object.entries(raw).forEach(([header, value]) => {
+        const nh = normalizeKey(header);
+        const cell = String(value || '').trim();
+        if (!cell) return;
+        const poolMatch = header.match(/([A-Z])/i) || header.match(/pool\s*([A-Z])/i);
+        if (poolMatch && !['team','player','players','name','seed','slot','rank','school','code'].includes(nh)) {
+          out.push({ division, pool: poolMatch[1].toUpperCase(), slot: seedValue, team: cell, raw });
+        }
+      });
+    });
+  });
+  return out;
+}
+
+function enrichResolvedMatches(matches, standings, playoffRows, teamSheetRows) {
+  const seedLookup = buildSeedLookup(standings, matches, teamSheetRows);
+  const winnerLookup = buildWinnerLookup(matches, playoffRows, seedLookup);
+  return matches.map(match => {
+    const teamAResolved = resolveParticipant(match.teamA, match, seedLookup, winnerLookup);
+    const teamBResolved = resolveParticipant(match.teamB, match, seedLookup, winnerLookup);
+    const winnerResolved = resolveWinner(match.winner, teamAResolved, teamBResolved, match, seedLookup, winnerLookup);
+    return { ...match, teamAResolved, teamBResolved, winnerResolved };
+  });
+}
+
+function normalizePoolLabel(pool) {
+  const raw = String(pool || '').trim();
+  if (!raw) return '';
+  const m = raw.match(/([A-Z])$/i);
+  return m ? m[1].toUpperCase() : raw.toUpperCase();
+}
+
+function buildSeedLookup(standings, matches, teamSheetRows) {
+  const lookup = {};
+  const put = (division, key, value) => {
+    const d = normalizeKey(division || '');
+    const k = normalizeKey(key || '');
+    const v = String(value || '').trim();
+    if (!d || !k || !v) return;
+    lookup[d] = lookup[d] || {};
+    if (!lookup[d][k]) lookup[d][k] = v;
+  };
+
+  const putPoolRankAliases = (division, pool, rank, team) => {
+    const p = normalizePoolLabel(pool);
+    const r = String(rank || '').trim();
+    if (!p || !r || !team) return;
+    put(division, `${p}${r}`, team);
+    put(division, `pool ${p} ${r}`, team);
+    put(division, `pool ${p} #${r}`, team);
+    put(division, `${r} (${p})`, team);
+  };
+
+  (standings || []).forEach(row => {
+    const division = row.division || '';
+    const pool = String(row.pool || '').trim();
+    const rank = String(row.rank || '').trim();
+    const team = String(row.team || '').trim();
+    if (!division || !team) return;
+    if (pool && rank) putPoolRankAliases(division, pool, rank, team);
+    if (rank) {
+      put(division, `rank ${rank}`, team);
+      put(division, `seed ${rank}`, team);
+      put(division, `${rank}`, team);
+    }
+  });
+
+  (teamSheetRows || []).forEach(row => {
+    const division = row.division || '';
+    const pool = String(row.pool || '').trim();
+    const slot = String(row.slot || '').trim();
+    const team = String(row.team || '').trim();
+    if (!division || !pool || !slot || !team) return;
+    putPoolRankAliases(division, pool, slot, team);
+    put(division, `${slot}`, team);
+  });
+
+  [...(FALLBACK_POOL_MATCHES || []), ...(matches || [])].forEach(match => {
+    if (normalizeKey(match.stage) !== 'pool') return;
+    const pool = normalizePoolLabel(match.pool);
+    [match.teamA, match.teamB].forEach(name => {
+      const parsed = extractSeedDetails(name);
+      if (!parsed) return;
+      putPoolRankAliases(match.division, pool, parsed.seed, name);
+      put(match.division, `${parsed.code}`, name);
+      put(match.division, `${parsed.school} ${parsed.eventCode}${parsed.seed}`, name);
+    });
+  });
+
+  return lookup;
+}
+
+function buildWinnerLookup(matches, playoffRows, seedLookup) {
+  const lookup = {};
+  const resolvedMatches = [...(matches || []), ...(playoffRows || [])].map(match => ({
+    ...match,
+    teamAResolved: resolveDirectSeed(match.teamA, match.division, seedLookup) || String(match.teamA || '').trim(),
+    teamBResolved: resolveDirectSeed(match.teamB, match.division, seedLookup) || String(match.teamB || '').trim()
+  }));
+
+  for (let pass = 0; pass < 5; pass++) {
+    let changed = false;
+    resolvedMatches.forEach(match => {
+      const matchId = String(match.matchId || '').trim();
+      if (!matchId) return;
+      const winner = resolveWinner(match.winner, match.teamAResolved, match.teamBResolved, match, seedLookup, lookup);
+      if (winner) {
+        const k = `winner of match ${matchId}`;
+        if (!lookup[k] || lookup[k] !== winner) { lookup[k] = winner; changed = true; }
+      }
+      const newA = resolveParticipant(match.teamAResolved || match.teamA, match, seedLookup, lookup);
+      const newB = resolveParticipant(match.teamBResolved || match.teamB, match, seedLookup, lookup);
+      if (newA !== match.teamAResolved) { match.teamAResolved = newA; changed = true; }
+      if (newB !== match.teamBResolved) { match.teamBResolved = newB; changed = true; }
+    });
+    if (!changed) break;
+  }
+
+  return lookup;
+}
+
+function resolveParticipant(value, match, seedLookup, winnerLookup) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const winnerKey = normalizeKey(raw);
+  if (winnerLookup[winnerKey]) return winnerLookup[winnerKey];
+
+  const direct = resolveDirectSeed(raw, match.division, seedLookup);
+  if (direct) return direct;
+
+  const pool = normalizePoolLabel(match.pool);
+  if (pool && /^\d+$/.test(raw)) {
+    const byPool = getLookup(seedLookup, match.division, `${pool}${raw}`) || getLookup(seedLookup, match.division, `pool ${pool} ${raw}`) || getLookup(seedLookup, match.division, `pool ${pool} #${raw}`);
+    if (byPool) return byPool;
+  }
+
+  const parsed = extractSeedDetails(raw);
+  if (parsed) {
+    const parsedPool = normalizePoolLabel(parsed.pool);
+    const byParsed = getLookup(seedLookup, match.division, `${parsedPool}${parsed.seed}`) || getLookup(seedLookup, match.division, parsed.code) || getLookup(seedLookup, match.division, parsed.seed);
+    if (byParsed) return byParsed;
+  }
+
+  const versus = raw.match(/^\s*(\d+)\s*(?:vs|v)\s*(\d+)\s*$/i);
+  if (versus && pool) {
+    const left = getLookup(seedLookup, match.division, `${pool}${versus[1]}`) || getLookup(seedLookup, match.division, `pool ${pool} ${versus[1]}`) || versus[1];
+    const right = getLookup(seedLookup, match.division, `${pool}${versus[2]}`) || getLookup(seedLookup, match.division, `pool ${pool} ${versus[2]}`) || versus[2];
+    return `${left} vs ${right}`;
+  }
+
+  return raw;
+}
+
+function resolveDirectSeed(raw, division, seedLookup) {
+  const val = String(raw || '').trim();
+  if (!val) return '';
+  return getLookup(seedLookup, division, val) || getLookup(seedLookup, division, normalizeKey(val));
+}
+
+function resolveWinner(rawWinner, teamAResolved, teamBResolved, match, seedLookup, winnerLookup) {
+  const raw = String(rawWinner || '').trim();
+  if (!raw) return '';
+  const k = normalizeKey(raw);
+  if (winnerLookup[k]) return winnerLookup[k];
+  if (k === normalizeKey(match.teamA || '') || k === normalizeKey(teamAResolved || '') || k === 'a' || k === 'team a' || k === 'player a') return teamAResolved || match.teamA;
+  if (k === normalizeKey(match.teamB || '') || k === normalizeKey(teamBResolved || '') || k === 'b' || k === 'team b' || k === 'player b') return teamBResolved || match.teamB;
+  return resolveDirectSeed(raw, match.division, seedLookup) || raw;
+}
+
+function getLookup(seedLookup, division, key) {
+  const d = normalizeKey(division || '');
+  const k = normalizeKey(key || '');
+  return seedLookup[d] && seedLookup[d][k] ? seedLookup[d][k] : '';
+}
+
+function extractSeedDetails(name) {
+  const raw = String(name || '').trim();
+  const m = raw.match(/([A-Z]{2,3})-([A-Z]{2})(\d+)/i);
+  if (!m) return null;
+  const code = `${m[1]}-${m[2]}${m[3]}`;
+  return { school: m[1].toUpperCase(), eventCode: m[2].toUpperCase(), seed: m[3], code };
+}
+
+function filterMatches(matches) {
+  return matches.filter(match => {
+    const tabOk = state.activeTab === 'All' || match.division === state.activeTab;
+    if (!tabOk) return false;
+    if (!state.search) return true;
+    const haystack = [
+      match.division, match.stage, match.pool, match.matchId, match.teamA, match.teamB, match.teamAResolved, match.teamBResolved, match.court, match.winner
+    ].join(' ').toLowerCase();
+    return haystack.includes(state.search);
+  });
+}
+
+function renderAll() {
+  const filtered = filterMatches(state.matches);
+  renderStats(filtered);
+  renderMatchSection(els.liveMatches, filtered.filter(m => normalizeKey(m.status).includes('live')));
+  renderMatchSection(els.onDeckMatches, filtered.filter(m => normalizeKey(m.status).includes('deck')));
+  renderMatchSection(els.upcomingMatches, filtered.filter(m => {
+    const s = normalizeKey(m.status);
+    return s.includes('upcoming') || (!s.includes('live') && !s.includes('deck') && !s.includes('done') && !s.includes('complete'));
+  }));
+  renderMatchSection(els.completedMatches, filtered.filter(m => {
+    const s = normalizeKey(m.status);
+    return s.includes('done') || s.includes('complete') || s.includes('finished');
+  }));
+  renderStandings();
+  renderPlayoffs(filtered);
+  renderNote();
+}
+
+function renderStats(filtered) {
+  const live = filtered.filter(m => normalizeKey(m.status).includes('live')).length;
+  const onDeck = filtered.filter(m => normalizeKey(m.status).includes('deck')).length;
+  const done = filtered.filter(m => {
+    const s = normalizeKey(m.status);
+    return s.includes('done') || s.includes('complete') || s.includes('finished');
+  }).length;
+  const divisions = new Set(filtered.map(m => m.division).filter(Boolean)).size;
+  const courts = new Set(filtered.map(m => m.court).filter(Boolean)).size;
+
+  const items = [
+    ['Visible Matches', filtered.length],
+    ['Live Now', live],
+    ['On Deck', onDeck],
+    ['Completed', done],
+    ['Divisions', divisions],
+    ['Courts in Use', courts]
+  ];
+
+  els.stats.innerHTML = items.map(([label, value]) => `
+    <div class="stat">
+      <div class="label">${escapeHtml(label)}</div>
+      <div class="value">${escapeHtml(String(value))}</div>
+    </div>
+  `).join('');
+}
+
+function sortMatchesByNumber(matches) {
+  return [...matches].sort((a, b) => {
+    const aNum = Number.parseInt(String(a.matchId || '').match(/\d+/)?.[0] || '999999', 10);
+    const bNum = Number.parseInt(String(b.matchId || '').match(/\d+/)?.[0] || '999999', 10);
+    if (aNum !== bNum) return aNum - bNum;
+    return String(a.matchId || '').localeCompare(String(b.matchId || ''));
+  });
+}
+
+function renderMatchSection(container, matches) {
+  if (!matches.length) {
+    container.innerHTML = `<div class="empty">No matches in this section for the current filter.</div>`;
+    return;
+  }
+  const sortedMatches = sortMatchesByNumber(matches);
+  container.innerHTML = sortedMatches.map(renderMatchCard).join('');
+}
+
+function renderMatchCard(match) {
+  const statusClass = normalizeKey(match.status).replace(/\s+/g, '') || 'upcoming';
+  const isPlayoff = normalizeKey(match.stage) !== 'pool';
+  const displayA = match.teamAResolved || match.teamA;
+  const displayB = match.teamBResolved || match.teamB;
+  const displayWinner = match.winnerResolved || match.winner;
+  const winnerA = displayWinner && normalizeKey(displayWinner) === normalizeKey(displayA);
+  const winnerB = displayWinner && normalizeKey(displayWinner) === normalizeKey(displayB);
+
+  return `
+    <div class="match-card ${statusClass} ${isPlayoff ? 'playoff' : ''}">
+      <div class="match-top">
+        <div>
+          <div class="match-id">Match ${escapeHtml(match.matchId)}</div>
+          <div>${escapeHtml(match.division)}</div>
+        </div>
+        <div class="tag ${statusClass}">${escapeHtml(match.status || 'Upcoming')}</div>
+      </div>
+      <div class="team-row ${winnerA ? 'winner' : ''}">
+        <div class="team-name">${escapeHtml(displayA || 'TBD')}</div>
+        <div class="score">${escapeHtml(match.scoreA || '—')}</div>
+      </div>
+      <div class="team-row ${winnerB ? 'winner' : ''}">
+        <div class="team-name">${escapeHtml(displayB || 'TBD')}</div>
+        <div class="score">${escapeHtml(match.scoreB || '—')}</div>
+      </div>
+      <div class="meta">
+        <span>${escapeHtml(match.stage || 'Pool')}</span>
+        ${match.pool ? `<span>Pool ${escapeHtml(match.pool)}</span>` : ''}
+        ${match.court ? `<span>Court ${escapeHtml(match.court)}</span>` : ''}
+        ${displayWinner ? `<span>Winner: ${escapeHtml(displayWinner)}</span>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderStandings() {
+  const relevant = state.standings.filter(row => state.activeTab === 'All' || row.division === state.activeTab);
+  if (!relevant.length) {
+    els.standings.innerHTML = `<div class="empty">No pool standings found in the sheet yet.</div>`;
+    return;
+  }
+
+  const groups = {};
+  relevant.forEach(row => {
+    const key = `${row.division}||${row.pool || '—'}`;
+    groups[key] = groups[key] || { division: row.division, pool: row.pool || '—', rows: [] };
+    groups[key].rows.push(row);
+  });
+
+  els.standings.innerHTML = `<div class="standings-wrap">${Object.values(groups).map(group => `
+    <div class="pool-card">
+      <h3>${escapeHtml(group.division)}${group.pool !== '—' ? ` — Pool ${escapeHtml(group.pool)}` : ''}</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Team / Player</th>
+            <th>W</th>
+            <th>L</th>
+            <th>Pts</th>
+            <th>Diff</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${group.rows.map(row => `
+            <tr>
+              <td>${escapeHtml(row.rank || '—')}</td>
+              <td>${escapeHtml(row.team || '—')}</td>
+              <td>${escapeHtml(row.wins || '—')}</td>
+              <td>${escapeHtml(row.losses || '—')}</td>
+              <td>${escapeHtml(row.points || '—')}</td>
+              <td>${escapeHtml(row.diff || '—')}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `).join('')}</div>`;
+}
+
+function renderPlayoffs(filteredMatches) {
+  const playoffMatches = filteredMatches.filter(m => normalizeKey(m.stage) !== 'pool');
+  if (!playoffMatches.length) {
+    els.playoffs.innerHTML = `<div class="empty">No playoff rows are visible for the current division filter yet.</div>`;
+    return;
+  }
+
+  const groupedByDivision = {};
+  playoffMatches.forEach(match => {
+    groupedByDivision[match.division] = groupedByDivision[match.division] || {};
+    groupedByDivision[match.division][match.stage] = groupedByDivision[match.division][match.stage] || [];
+    groupedByDivision[match.division][match.stage].push(match);
+  });
+
+  const roundOrder = ['QF','Quarterfinal','Quarter Final','SF','Semifinal','Semi Final','Final','Bronze'];
+
+  els.playoffs.innerHTML = Object.entries(groupedByDivision).map(([division, rounds]) => {
+    const stages = Object.keys(rounds).sort((a,b) => roundOrder.indexOf(a) - roundOrder.indexOf(b));
+    return `
+      <div class="section">
+        <h2>${escapeHtml(division)}</h2>
+        <div class="bracket-scroll">
+          <div class="bracket">
+            ${stages.map(stage => `
+              <div class="round-col">
+                <div class="round-title">${escapeHtml(stage)}</div>
+                ${rounds[stage].map(match => {
+                  const displayA = match.teamAResolved || match.teamA;
+                  const displayB = match.teamBResolved || match.teamB;
+                  const displayWinner = match.winnerResolved || match.winner;
+                  const winnerA = displayWinner && normalizeKey(displayWinner) === normalizeKey(displayA);
+                  const winnerB = displayWinner && normalizeKey(displayWinner) === normalizeKey(displayB);
+                  return `
+                    <div class="bracket-match">
+                      <div class="mid">Match ${escapeHtml(match.matchId)}${match.court ? ` • Court ${escapeHtml(match.court)}` : ''}</div>
+                      <div class="bteam ${winnerA ? 'winner' : ''}"><span>${escapeHtml(displayA || 'TBD')}</span><span>${escapeHtml(match.scoreA || '—')}</span></div>
+                      <div class="bteam ${winnerB ? 'winner' : ''}"><span>${escapeHtml(displayB || 'TBD')}</span><span>${escapeHtml(match.scoreB || '—')}</span></div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderNote() {
+  if (state.error) {
+    els.noteBox.innerHTML = `
+      <strong>Connection note:</strong> The page could not read one or more Google Sheet tabs right now. Make sure the sheet is shared publicly and that the tabs still exist with these names: <strong>${escapeHtml(CONFIG.endpoints.matches)}</strong>, <strong>${escapeHtml(CONFIG.endpoints.standings)}</strong>, the <strong>Playoffs_*_Web</strong> tabs, and the <strong>Teams_*</strong> tabs.
+    `;
+    return;
+  }
+  const total = state.matches.length;
+  const live = state.matches.filter(m => normalizeKey(m.status).includes('live')).length;
+  els.noteBox.innerHTML = `
+    Connected successfully. Loaded <strong>${escapeHtml(String(total))}</strong> matches from Google Sheets, including <strong>${escapeHtml(String(live))}</strong> live matches right now. Pool slot names are resolved from the <strong>Teams_*</strong> tabs whenever available.
+  `;
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+</script>
+</body>
+</html>
